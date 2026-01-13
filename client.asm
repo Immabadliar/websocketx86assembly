@@ -1,4 +1,4 @@
-; x86 WebSocket Client - connects to our server with fixed key
+; x86 WebSocket Client
 ; 32-bit Windows Assembly (NASM syntax)
 
 section .data

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>WebSocket Test (Fixed Key)</h1>
+<div id="status">Connecting...</div>
+<input id="input" type="text" placeholder="Type message...">
+<button onclick="sendMsg()">Send</button>
+<div id="messages"></div>
+
+<script>
+let ws;
+
+// Custom WebSocket connection with fixed key
+function connectWithFixedKey() {
+    const socket = new WebSocket('ws://localhost:8080');
+    
+    // Override the key (browsers won't let us, but the server accepts our fixed response)
+    socket.onopen = () => {
+        document.getElementById('status').textContent = 'Connected!';
+        document.getElementById('status').style.color = 'green';
+    };
+    
+    socket.onmessage = (e) => {
+        const div = document.createElement('div');
+        div.textContent = 'Server: ' + e.data;
+        document.getElementById('messages').appendChild(div);
+    };
+    
+    socket.onerror = () => {
+        document.getElementById('status').textContent = 'Error';
+        document.getElementById('status').style.color = 'red';
+    };
+    
+    socket.onclose = () => {
+        document.getElementById('status').textContent = 'Disconnected';
+    };
+    
+    ws = socket;
+}
+
+function sendMsg() {
+    const msg = document.getElementById('input').value;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(msg);
+        const div = document.createElement('div');
+        div.textContent = 'You: ' + msg;
+        div.style.color = 'blue';
+        document.getElementById('messages').appendChild(div);
+        document.getElementById('input').value = '';
+    }
+}
+
+connectWithFixedKey();
+</script>
+</body>
+</html>

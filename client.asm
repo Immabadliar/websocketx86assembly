@@ -1,6 +1,3 @@
-; x86 WebSocket Client
-; 32-bit Windows Assembly (NASM syntax)
-
 section .data
     wsaData times 400 db 0
     serverAddr times 16 db 0
@@ -12,7 +9,6 @@ section .data
     receivedMsg db "Received: ", 0
     errorMsg db "Error!", 0xD, 0xA, 0
     
-    ; WebSocket handshake with our fixed key
     handshake db "GET / HTTP/1.1", 0xD, 0xA
               db "Host: localhost:8080", 0xD, 0xA
               db "Upgrade: websocket", 0xD, 0xA
@@ -22,7 +18,6 @@ section .data
               db 0xD, 0xA
     handshakeLen equ $ - handshake
     
-    ; Test message
     testMsg db "Hello from x86 client!"
     testMsgLen equ $ - testMsg
     
@@ -47,7 +42,6 @@ _start:
     push startMsg
     call PrintString
     
-    ; Initialize Winsock
     push wsaData
     push 0x0202
     call _WSAStartup@8
@@ -66,18 +60,16 @@ _start:
     push connectingMsg
     call PrintString
     
-    ; Setup server address
     mov word [serverAddr], 2        ; AF_INET
     
-    ; Port 8080 in network byte order
     push 8080
     call _htons@4
     mov word [serverAddr + 2], ax
     
     ; localhost = 127.0.0.1
-    mov dword [serverAddr + 4], 0x0100007F  ; 127.0.0.1 in network byte order
+    mov dword [serverAddr + 4], 0x0100007F
     
-    ; Connect
+
     push 16
     push serverAddr
     push dword [clientSocket]
@@ -88,21 +80,18 @@ _start:
     push connectedMsg
     call PrintString
     
-    ; Send WebSocket handshake
     push 0
     push handshakeLen
     push handshake
     push dword [clientSocket]
     call _send@16
     
-    ; Receive handshake response
     push 0
     push 4096
     push recvBuffer
     push dword [clientSocket]
     call _recv@16
     
-    ; Check for "101" in response
     mov esi, recvBuffer
     mov ecx, 100
 .check_101:
@@ -116,35 +105,26 @@ _start:
     jmp error_exit
     
 .handshake_ok:
-    ; Build WebSocket text frame
-    ; Format: [FIN+opcode][mask+len][mask key 4 bytes][masked payload]
-    
     mov edi, sendFrame
-    
-    ; Byte 0: FIN (1) + opcode (1 = text) = 0x81
+
     mov byte [edi], 0x81
     inc edi
     
-    ; Byte 1: MASK (1) + length
-    mov al, 0x80                    ; Mask bit
+    mov al, 0x80                  
     or al, testMsgLen
     mov [edi], al
     inc edi
     
-    ; Mask key (use all zeros for simplicity)
     mov dword [edi], 0
     add edi, 4
     
-    ; Copy payload (unmasked since mask is zeros)
     mov esi, testMsg
     mov ecx, testMsgLen
     rep movsb
     
-    ; Calculate total frame size
     mov ecx, testMsgLen
-    add ecx, 6                      ; 2 header + 4 mask
+    add ecx, 6                  
     
-    ; Send frame
     push 0
     push ecx
     push sendFrame
@@ -154,7 +134,6 @@ _start:
     push sentMsg
     call PrintString
     
-    ; Receive echo
     push 0
     push 4096
     push recvBuffer
@@ -164,12 +143,9 @@ _start:
     cmp eax, 0
     jle cleanup
     
-    ; Print "Received: "
     push receivedMsg
     call PrintString
     
-    ; Parse frame and print payload
-    ; Payload starts at byte 2 (assuming short length, no mask from server)
     movzx ecx, byte [recvBuffer + 1]
     and ecx, 0x7F
     
@@ -181,7 +157,6 @@ _start:
     push dword [hStdOut]
     call _WriteConsoleA@20
     
-    ; Print newline
     push newlineMsg
     call PrintString
     

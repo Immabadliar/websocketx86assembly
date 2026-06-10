@@ -48,7 +48,6 @@ _start:
     test eax, eax
     jnz error_exit
     
-    ; Create socket
     push 6
     push 1
     push 2

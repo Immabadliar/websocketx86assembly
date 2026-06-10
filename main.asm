@@ -1,6 +1,3 @@
-; x86 WebSocket Server - Fixed key for testing
-; 32-bit Windows Assembly (NASM syntax)
-
 section .data
     wsaData times 400 db 0
     serverAddr times 16 db 0
@@ -15,7 +12,6 @@ section .data
     dataReceivedMsg db "Data received!", 0xD, 0xA, 0
     echoSentMsg db "Echo sent!", 0xD, 0xA, 0
     
-    ; Hardcoded response for key "dGhlIHNhbXBsZSBub25jZQ=="
     wsResponse db "HTTP/1.1 101 Switching Protocols", 0xD, 0xA
                db "Upgrade: websocket", 0xD, 0xA
                db "Connection: Upgrade", 0xD, 0xA
@@ -100,7 +96,6 @@ accept_loop:
     push clientConnectMsg
     call PrintString
     
-    ; Receive handshake
     push 0
     push 4096
     push recvBuffer
@@ -109,7 +104,6 @@ accept_loop:
     cmp eax, 0
     jle close_client
     
-    ; Send hardcoded response
     push 0
     push wsResponseLen
     push wsResponse
@@ -119,7 +113,6 @@ accept_loop:
     push handshakeSentMsg
     call PrintString
     
-    ; Receive WebSocket frames
 message_loop:
     push 0
     push 4096
@@ -133,21 +126,15 @@ message_loop:
     push dataReceivedMsg
     call PrintString
     
-    ; Parse WebSocket frame
-    ; Byte 0: FIN + opcode
-    ; Byte 1: MASK + payload length
     movzx ecx, byte [recvBuffer + 1]
     and ecx, 0x7F  ; Get payload length (ignore mask bit)
     
-    ; Check if masked (bit 7 of byte 1)
     test byte [recvBuffer + 1], 0x80
     jz .send_echo  ; Not masked, shouldn't happen from client
     
-    ; Payload is masked, starts at byte 6 (2 header + 4 mask key)
     mov esi, recvBuffer
     add esi, 6
     
-    ; Unmask the payload (XOR with mask key at bytes 2-5)
     mov edi, sendBuffer
     add edi, 2  ; Leave room for header
     
@@ -168,15 +155,12 @@ message_loop:
     jmp .unmask_loop
     
 .send_echo:
-    ; Build echo frame: FIN=1, opcode=1 (text), no mask
     mov byte [sendBuffer], 0x81  ; FIN + text frame
     mov [sendBuffer + 1], cl  ; Payload length (unmasked, no mask bit)
     
-    ; Calculate total frame size
     mov ebx, ecx
     add ebx, 2  ; header size
     
-    ; Send echo
     push 0
     push ebx
     push sendBuffer
